@@ -18,8 +18,8 @@ let db = null;
 const initializeDBAndServer = async () => {
   try {
     db = await open({ filename: dbPath, driver: sqlite3.Database });
-    app.listen(4000, () => {
-      console.log("Server Running at http://localhost:4000");
+    app.listen(3004, () => {
+      console.log("Server Running at http://localhost:3004");
     });
   } catch (e) {
     console.log(`DB Error: ${e.message}`);
@@ -75,3 +75,34 @@ const authenticateUser = (request, response, next) => {
     });
   }
 };
+
+// Insert data
+
+app.post("/files/upload/", authenticateUser, async (request, response) => {
+  const userFiles = request.body;
+  const values = userFiles.map(
+    (eachFile) =>
+      `("${eachFile.userId}", ${eachFile.id}, ${eachFile.title}, ${eachFile.body})`
+  );
+
+  const valuesString = values.join(",");
+
+  const uploadUserFilesQuery = `
+    INSERT INTO
+      file (user_id, id, title, body)
+    VALUES
+        ${valuesString};`;
+
+  const dbResponse = await db.run(uploadUserFilesQuery);
+  response.send("Success");
+});
+
+// get user files
+app.get("/userfiles/", authenticateUser, async (request, response) => {
+  const data = await db.all(`
+    SELECT * FROM userData order by id
+    `);
+  response.send({ data });
+});
+
+module.exports = app;
